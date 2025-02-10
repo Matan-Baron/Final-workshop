@@ -1,0 +1,58 @@
+---
+- name: Setup Web Server
+  hosts: webservers
+  become: yes
+  tasks:
+    - name: Install epel-release package
+      ansible.builtin.yum:
+        name: epel-release
+        state: present
+
+    - name: Install git, python-pip, yum-utils
+      ansible.builtin.yum:
+        name:
+          - git
+          - python3-pip
+          - yum-utils
+        state: present
+
+    - name: Add Docker CE repo
+      ansible.builtin.shell: |
+        yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+      args:
+        creates: /etc/yum.repos.d/docker-ce.repo
+
+    - name: Install Docker and related packages
+      ansible.builtin.yum:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose
+        state: present
+
+    - name: Start Docker service
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+
+#   - name: Copy SSH key to the web server
+#     ansible.builtin.copy:
+#       src: /path/to/local/ssh_key
+#       dest: /home/username/.ssh/id_rsa
+#       mode: '0600'
+
+    - name: Clone app repository
+      ansible.builtin.git:
+        repo: 'https://github.com/Matan-Baron/Final-workshop'
+        dest: /home/ec2-user
+
+    - name: Build Docker image
+      ansible.builtin.command:
+        cmd: docker build -t username/app:latest /home/ec2-user        
+        chdir: /home/ec2-user        
+
+#   - name: Push Docker image to DockerHub
+#     ansible.builtin.command:
+#       cmd: docker push username/app:latest
